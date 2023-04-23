@@ -1,1 +1,1 @@
-# IMBD-Data-Visualization
+# IMBD Data Visualization
