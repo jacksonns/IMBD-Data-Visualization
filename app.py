@@ -2,22 +2,30 @@ from dash import Dash, html, dash_table, dcc, callback, Output, Input
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
-import numpy as np
-
+from database.db import imdb_database
 
 # Initialize the app and incorporate a Dash Bootstrap theme
 external_stylesheets = [dbc.themes.COSMO]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
+# Get MongoDB database
+db = imdb_database()
 
-movies = pd.read_csv('data/title.basics.tsv', sep='\t')
-movies = movies.query(" titleType == 'movie' ")
-nan_index = movies[movies['startYear'] == '\\N'].index
-movies_with_year = movies.drop(nan_index)
-year_counts = movies_with_year['startYear'].value_counts().sort_index()
 
 def movies_per_year_graph():
-    fig = px.line(year_counts, title='Quantidade de filmes lançados por ano')
+    collection = db['movies.basics']
+
+    pipeline = [
+    {"$group": {"_id": "$startYear", "count": {"$sum": 1}}}
+    ]
+    result = collection.aggregate(pipeline)
+
+    years_df = pd.DataFrame.from_records(result)
+    years_df = years_df.drop(years_df[years_df['_id'] == '\\N'].index)
+    years_df = years_df.sort_values('_id')
+
+    fig = px.line(years_df, x='_id',y='count',
+                   title='Quantidade de filmes lançados por ano')
     fig.update_layout(
         xaxis_title="Ano",
         yaxis_title="Número de Filmes",
@@ -26,18 +34,27 @@ def movies_per_year_graph():
     return fig
 
 
-nan_genres = movies[movies['genres'] == '\\N'].index
-movies_with_genres = movies.drop(nan_genres)
-movies_genres_column = movies_with_genres['genres'].str.split(',')
-genres_expanded = movies_genres_column.explode().value_counts()
-
 def genre_distribution_graph():
-    fig = px.bar(genres_expanded, title='Distribuição de filmes por gênero')
+    collection = db['movies.basics']
+    pipeline = [
+    {"$project": {"genres": {"$split": ["$genres", ","]}}},  # Divide a string em gêneros individuais
+    {"$unwind": "$genres"},  # Desdobra os gêneros em documentos separados
+    {"$group": {"_id": "$genres", "count": {"$sum": 1}}}  # Agrupa e conta a ocorrência de cada gênero
+    ]
+    result = collection.aggregate(pipeline)
+
+    genres_df = pd.DataFrame.from_records(result)
+    genres_df = genres_df.drop(genres_df[genres_df['_id'] == '\\N'].index)
+    genres_df = genres_df.sort_values('count', ascending=False)
+
+    fig = px.bar(genres_df, x='_id', y='count', 
+                 title='Distribuição de filmes por gênero')
     fig.update_layout(
         xaxis_title=None,
         yaxis_title=None,
         showlegend=False
     )
+
     return fig
 
 
@@ -57,8 +74,6 @@ app.layout = dbc.Container([
     ]),
 
 ], fluid=True)
-
-
 
 
 # Run the app
