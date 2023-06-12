@@ -2,7 +2,9 @@ from dash import Dash, html, dash_table, dcc, callback, Output, Input
 import pandas as pd
 import plotly.express as px
 import dash_bootstrap_components as dbc
+
 from database.db import imdb_database
+from graphs.network_graph import actors_network_graph
 
 # Initialize the app and incorporate a Dash Bootstrap theme
 external_stylesheets = [dbc.themes.COSMO]
@@ -71,6 +73,10 @@ app.layout = dbc.Container([
         dbc.Col([
             dcc.Graph(id='genre_distribution', figure=genre_distribution_graph()), 
         ], width=6),
+    ]),
+
+    dbc.Row([
+        dcc.Graph(id='actors_network', figure=actors_network_graph(db))
     ]),
 
 ], fluid=True)
