@@ -9,6 +9,7 @@ from graphs.network_graph import actors_network_graph
 # Initialize the app and incorporate a Dash Bootstrap theme
 external_stylesheets = [dbc.themes.COSMO]
 app = Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
 
 # Get MongoDB database
 db = imdb_database()
