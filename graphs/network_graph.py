@@ -6,11 +6,11 @@ import pandas as pd
 def network_graph(df):
     grafo = nx.Graph()
 
-    # Adiciona nós
+    # Add nodes
     for actors in df['actors']:
         grafo.add_nodes_from(actors)
 
-    # Adiciona actors
+    # Add actors
     for index, actors in enumerate(df['actors']):
         for i in range(len(actors)):
             for j in range(i + 1, len(actors)):
@@ -24,10 +24,10 @@ def network_graph(df):
         x.append(position[0])
         y.append(position[1])
 
-    # Criar o gráfico de grafo usando Plotly
+    # Create graph using plotly
     fig = go.Figure()
 
-    # Adicionar os nós
+    # Add nodes to graph
     fig.add_trace(go.Scatter(
         x=x,
         y=y,
@@ -37,7 +37,7 @@ def network_graph(df):
         hovertemplate='%{text}<extra></extra>'
     ))
 
-    # Adicionar as arestas
+    # Add edges to graph
     for edge in grafo.edges:
         x0, y0 = pos[edge[0]]
         x1, y1 = pos[edge[1]]
@@ -50,9 +50,8 @@ def network_graph(df):
             hovertemplate=f'{edge[0]} - {edge[1]}<br>Filme: {movie}<extra></extra>'
         ))
 
-    # Configurar layout do gráfico
+    # Config layout
     fig.update_layout(
-        title='Colaboração entre Atores',
         showlegend=False,
         hovermode='closest',
         xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
@@ -64,10 +63,10 @@ def network_graph(df):
 
 def actors_network_graph(db):
     collection = db['movies.data']
-    # Realizando a agregação para obter os 100 primeiros documentos
+    # Aggregation to obtain the first 100 objects
     pipeline = [
-        {"$project": {"title": 1, "actors": 1}},  # Projeção das colunas desejadas
-        {"$limit": 100}  # Limitando a 100 documentos
+        {"$project": {"title": 1, "actors": 1}},  # Desired Columns
+        {"$limit": 100}  # 100 objects retrieved
     ]
     result = collection.aggregate(pipeline)
     df = pd.DataFrame(result)
@@ -86,7 +85,6 @@ def imdb_database():
 
     return client["imdb"]
 
-from ..database.db import imdb_database
 
 if __name__=='__main__':
    db = imdb_database()
