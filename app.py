@@ -5,7 +5,7 @@ import dash_bootstrap_components as dbc
 
 from database.db import imdb_database
 from graphs.network_graph import actors_network_graph
-from graphs.ranking_bar import ranking_bar_graph
+from graphs.ranking_bar import RankingGraph
 
 # Initialize the app and incorporate a Dash Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -21,6 +21,7 @@ pipeline = [
 ]
 result = collection.aggregate(pipeline)
 movies_df = pd.DataFrame(result)
+ranking_graph = RankingGraph(movies_df)
 
 
 def movies_per_year_graph():
@@ -75,7 +76,9 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        html.Div("Distribuição de Filmes", className="text-secondary fs-4", style={'margin-bottom': '20px'}),
+        html.Div("Distribuição de Filmes", 
+                 className="text-secondary text-center fs-4", 
+                 style={'margin-bottom': '20px'}),
 
         dbc.RadioItems(
         id='movies_items',
@@ -92,24 +95,42 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        html.Div("Colaborações entre Atores", className="text-secondary fs-4"),
+        html.Div("Colaborações entre Atores", 
+                 className="text-secondary text-center fs-4"),
         dcc.Graph(id='actors_network', figure=actors_network_graph(db))
     ]),
 
     html.Hr(),
 
     dbc.Row([
-        html.Div("Notas dos Filmes", className="text-secondary fs-4", style={'margin-bottom': '20px'}),
+        html.Div("Avaliação dos Filmes", 
+                 className="text-secondary text-center fs-4", 
+                 style={'margin-bottom': '20px'}),
 
         dbc.Col([
-            dbc.Label("Ordenar por:"),
+            dbc.Label("Tipo de amostra:"),
             dbc.Select(
-                id='select_sort_filter',
+                id='select_sample_filter',
                 options=[
-                    {'label': 'Ano', 'value': 'ano'},
-                    {'label': 'Nota', 'value': 'nota'}
+                    {'label': 'Aleatória', 'value': 'random'},
+                    {'label': 'Ranking', 'value': 'ranking'}
                 ],
-                value='ano'
+                value='random'
+            ),
+        ]),
+
+        dbc.Col([
+            dbc.Label("Tamanho da amostra:"),
+            dbc.Select(
+                id='select_sample_size_filter',
+                options=[
+                    {'label': '10', 'value': 10},
+                    {'label': '50', 'value': 50},
+                    {'label': '100', 'value': 100},
+                    {'label': '150', 'value': 150},
+                    {'label': '200', 'value': 200}
+                ],
+                value=200
             ),
         ]),
 
@@ -118,14 +139,45 @@ app.layout = dbc.Container([
             dbc.Select(
                 id='select_genre_filter',
                 options=[
-                    {'label': 'Drama', 'value': 'drama'},
-                    {'label': 'Comédia', 'value': 'comedy'}
+                    {'label': '(Todos)', 'value': 'all'},
+                    {'label': 'Drama', 'value': 'Drama'},
+                    {'label': 'Comédia', 'value': 'Comedy'},
+                    {'label': 'Ação', 'value': 'Action'},
+                    {'label': 'Romance', 'value': 'Romance'},
+                    {'label': 'Criminal', 'value': 'Crime'},
+                    {'label': 'Suspense', 'value': 'Thriller'},
+                    {'label': 'Terror', 'value': 'Horror'},
+                    {'label': 'Aventura', 'value': 'Adventure'},
+                    {'label': 'Mistério', 'value': 'Mistery'},
+                    {'label': 'Fantasia', 'value': 'Fantasy'},
+                    {'label': 'Ficção Científica', 'value': 'Sci-Fi'},
+                    {'label': 'Biografia', 'value': 'Biography'},
+                    {'label': 'História', 'value': 'History'},
+                    {'label': 'Guerra', 'value': 'War'},
+                    {'label': 'Animação', 'value': 'Animation'},
+                    {'label': 'Musical', 'value': 'Musical'},
+                    {'label': 'Faroeste', 'value': 'Western'},
+                    {'label': 'Documentário', 'value': 'Documentary'}
                 ],
-                value='ano'
+                value='all'
             ),
         ]),
 
-        dcc.Graph(id='ranking_bar', figure=ranking_bar_graph(movies_df))
+        dbc.Col([
+            dbc.Label("Ordenar por:"),
+            dbc.Select(
+                id='select_sort_filter',
+                options=[
+                    {'label': '(Sem ordenação)', 'value': 'none'},
+                    {'label': 'Ano', 'value': 'year'},
+                    {'label': 'Nota', 'value': 'rating'},
+                    {'label': 'Ano e Nota', 'value': 'year_and_rating'}
+                ],
+                value='none'
+            ),
+        ]),
+
+        dcc.Graph(id='ranking_bar', figure=ranking_graph.get_graph())
     ]),
 
 ], fluid=True)
@@ -144,6 +196,19 @@ def update_movies_graph(value):
         return movies_per_year_graph()
     else:
         return None
+
+
+# Ranking Graph Callback
+@callback(
+    Output(component_id='ranking_bar', component_property='figure'),
+    Input(component_id='select_sample_filter', component_property='value'),
+    Input(component_id='select_sample_size_filter', component_property='value'),
+    Input(component_id='select_genre_filter', component_property='value'),
+    Input(component_id='select_sort_filter', component_property='value'),
+)
+
+def update_ranking_graph(sample_type, sample_size, genre, sorting):
+    return ranking_graph.update_graph(sample_type, int(sample_size), genre, sorting)
 
 
 
