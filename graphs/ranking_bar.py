@@ -29,26 +29,28 @@ class RankingGraph:
 
         return fig
     
+    def filter_by_genre(self, genre):
+        if genre == 'all':
+            self.filtered_df = self.movies_df
+        else: 
+            self.filtered_df = self.movies_df[self.movies_df['genres'].str.contains(genre)]
+
+    def set_sample(self):
+        if self.sample_type == 'random':
+            self.df = self.filtered_df.sample(n=MAX_SAMPLE_SIZE).reset_index(drop=True)
+        elif self.sample_type == 'ranking':
+            self.df = self.filtered_df.sort_values(by='averageRating', ascending=False)
+            self.df = self.df.head(MAX_SAMPLE_SIZE)
+    
     def update_graph(self, sample_type, sample_size, genre, sorting):
         if genre != self.genre:
-            if genre == 'all':
-                self.df = self.movies_df.sample(n=MAX_SAMPLE_SIZE).reset_index(drop=True)
-            else: 
-                self.df = self.movies_df[self.movies_df['genres'].str.contains(genre)]
-                if self.sample_type == 'random':
-                    self.df = self.df.sample(n=MAX_SAMPLE_SIZE).reset_index(drop=True)
-                elif self.sample_type == 'ranking':
-                    self.df = self.df.sort_values(by='averageRating', ascending=False)
-                    self.df = self.df.head(MAX_SAMPLE_SIZE)
+            self.filter_by_genre(genre)
             self.genre = genre
 
-        if sample_type != self.sample_type and genre == self.genre:
-            if sample_type == 'random':
-                self.df = self.movies_df.sample(n=MAX_SAMPLE_SIZE).reset_index(drop=True)
-            elif sample_type == 'ranking':
-                self.df = self.movies_df.sort_values(by='averageRating', ascending=False)
-                self.df = self.df.head(MAX_SAMPLE_SIZE)
+        if sample_type != self.sample_type:
             self.sample_type = sample_type
+        
+        self.set_sample()
         
         if sample_size != self.sample_size:
             self.sample_size = sample_size

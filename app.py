@@ -103,7 +103,7 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        html.Div("Avaliação dos Filmes", 
+        html.Div("Notas dos Filmes", 
                  className="text-secondary text-center fs-4", 
                  style={'margin-bottom': '20px'}),
 
