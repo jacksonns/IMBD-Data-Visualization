@@ -1,104 +1,33 @@
 from dash import Dash, html, dcc, callback, Output, Input
-import pandas as pd
-import plotly.express as px
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 
-from database.db import imdb_database
-from graphs.network_graph import actors_network_graph
+from database.db import DBManager
+from graphs.network_graph import NetworkGraph
 from graphs.ranking_bar import RankingGraph
+from graphs.movies_graph import MoviesGraph
 
 # Initialize the app and incorporate a Dash Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
 # Get MongoDB database
-db = imdb_database()
+db = DBManager()
 
-# Saving dataframe on cache (global variable).
-collection = db['movies.data']
-pipeline = [
-    {"$project": {"tconst": 1, "title": 1, 'year':1, "averageRating":1, "genres":1}},  # Desired Columns
-]
-result = collection.aggregate(pipeline)
-movies_df = pd.DataFrame(result)
-ranking_graph = RankingGraph(movies_df)
+# Initializing Graphs Classes.
+ranking_graph = RankingGraph(db.get_ranking_graph_data())
+network_graph = NetworkGraph(db.get_network_graph_data())
+movies_graph = MoviesGraph(db.get_years_graph_data(), db.get_genres_graph_data())
 
-
-def movies_per_year_graph():
-    collection = db['movies.basics']
-
-    pipeline = [
-    {"$group": {"_id": "$startYear", "count": {"$sum": 1}}}
-    ]
-    result = collection.aggregate(pipeline)
-
-    years_df = pd.DataFrame.from_records(result)
-    years_df = years_df.drop(years_df[years_df['_id'] == '\\N'].index)
-    years_df = years_df.sort_values('_id')
-
-    fig = px.line(years_df, x='_id',y='count')
-    fig.update_layout(
-        xaxis_title="Ano",
-        yaxis_title="Número de Filmes",
-        showlegend=False
-    )
-    return fig
-
-
-def genre_distribution_graph():
-    collection = db['movies.basics']
-    pipeline = [
-    {"$project": {"genres": {"$split": ["$genres", ","]}}},  # Divide a string em gêneros individuais
-    {"$unwind": "$genres"},  # Desdobra os gêneros em documentos separados
-    {"$group": {"_id": "$genres", "count": {"$sum": 1}}}  # Agrupa e conta a ocorrência de cada gênero
-    ]
-    result = collection.aggregate(pipeline)
-
-    genres_df = pd.DataFrame.from_records(result)
-    genres_df = genres_df.drop(genres_df[genres_df['_id'] == '\\N'].index)
-    genres_df = genres_df.sort_values('count', ascending=False)
-
-    fig = px.bar(genres_df, x='_id', y='count')
-    fig.update_layout(
-        xaxis_title=None,
-        yaxis_title=None,
-        showlegend=False
-    )
-
-    return fig
+# Getting actor names for search bar
+actors_list = db.get_actors_list()
+actor_options =[{'label': actor, 'value': actor} for actor in actors_list]
 
 
 app.layout = dbc.Container([
     dbc.Row([
-        html.Div('Visualização de Dados IMDB', className="text-primary text-center fs-3")
+        html.Div('Visualização de Dados IMDB', className="text-primary text-center fs-4")
     ]), 
-
-    html.Hr(),
-
-    dbc.Row([
-        html.Div("Distribuição de Filmes", 
-                 className="text-secondary text-center fs-4", 
-                 style={'margin-bottom': '20px'}),
-
-        dbc.RadioItems(
-        id='movies_items',
-        options=[
-            {'label': 'Por gênero', 'value': 'genero'},
-            {'label': 'Por ano', 'value': 'ano'}
-        ],
-        value='ano',
-        ),
-
-        dcc.Graph(id='movies_graph', figure=movies_per_year_graph()),
-    ]),
-
-    html.Hr(),
-
-    dbc.Row([
-        html.Div("Colaborações entre Atores", 
-                 className="text-secondary text-center fs-4"),
-        dcc.Graph(id='actors_network', figure=actors_network_graph(db))
-    ]),
 
     html.Hr(),
 
@@ -148,7 +77,7 @@ app.layout = dbc.Container([
                     {'label': 'Suspense', 'value': 'Thriller'},
                     {'label': 'Terror', 'value': 'Horror'},
                     {'label': 'Aventura', 'value': 'Adventure'},
-                    {'label': 'Mistério', 'value': 'Mistery'},
+                    {'label': 'Mistério', 'value': 'Mystery'},
                     {'label': 'Fantasia', 'value': 'Fantasy'},
                     {'label': 'Ficção Científica', 'value': 'Sci-Fi'},
                     {'label': 'Biografia', 'value': 'Biography'},
@@ -180,22 +109,50 @@ app.layout = dbc.Container([
         dcc.Graph(id='ranking_bar', figure=ranking_graph.get_graph())
     ]),
 
+    html.Hr(),
+
+    dbc.Row([
+        html.Div("Colaborações entre Atores", 
+                 className="text-secondary text-center fs-4"),
+
+        dbc.Label("Ator ou Atriz:"),
+        dcc.Dropdown(
+            id='actors_search_bar',
+            placeholder='Digite para pesquisar...'
+        ),
+
+        html.Div(id='search-results'),
+        
+        dcc.Graph(id='actors_network', figure=network_graph.get_graph())
+    ]),
+
+    html.Hr(),
+
+    dbc.Row([
+        html.Div("Distribuição de Filmes", 
+                 className="text-secondary text-center fs-4", 
+                 style={'margin-bottom': '20px'}),
+
+        html.Div(
+            style={'display': 'flex', 'justify-content': 'center', 'align-items': 'center'},
+            children=[
+                dbc.RadioItems(
+                    id='movies_items',
+                    options=[
+                        {'label': 'Por gênero', 'value': 'genero'},
+                        {'label': 'Por ano', 'value': 'ano'}
+                    ],
+                    value='ano',
+                    inline=True
+                )]
+        ),
+
+        dcc.Graph(id='movies_graph', figure=movies_graph.get_year_graph()),
+    ]),
+
+
 ], fluid=True)
 
-
-# Callback for 1st graph (movies number per year/genre)
-@callback(
-    Output(component_id='movies_graph', component_property='figure'),
-    Input(component_id='movies_items', component_property='value')
-)
-
-def update_movies_graph(value):
-    if value == 'genero':
-        return genre_distribution_graph()
-    elif value == 'ano':
-        return movies_per_year_graph()
-    else:
-        return None
 
 
 # Ranking Graph Callback
@@ -209,6 +166,35 @@ def update_movies_graph(value):
 
 def update_ranking_graph(sample_type, sample_size, genre, sorting):
     return ranking_graph.update_graph(sample_type, int(sample_size), genre, sorting)
+
+
+
+# Actors search Callback
+@app.callback(
+    Output('actors_search_bar', 'options'),
+    [Input('actors_search_bar', 'search_value')]
+)
+
+def search(search_value):
+    if not search_value:
+        raise PreventUpdate()
+    return [actor for actor in actor_options if search_value in actor["label"]]
+
+
+
+# Callback for movies distribution (movies number per year/genre)
+@callback(
+    Output(component_id='movies_graph', component_property='figure'),
+    Input(component_id='movies_items', component_property='value')
+)
+
+def update_movies_graph(value):
+    if value == 'genero':
+        return movies_graph.get_genre_graph()
+    elif value == 'ano':
+        return movies_graph.get_year_graph()
+    else:
+        return None
 
 
 
