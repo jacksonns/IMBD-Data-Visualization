@@ -118,10 +118,8 @@ app.layout = dbc.Container([
         dbc.Label("Ator ou Atriz:"),
         dcc.Dropdown(
             id='actors_search_bar',
-            placeholder='Digite para pesquisar...'
+            placeholder='Digite para pesquisar um nome...'
         ),
-
-        html.Div(id='search-results'),
         
         dcc.Graph(id='actors_network', figure=network_graph.get_graph())
     ]),
@@ -129,7 +127,7 @@ app.layout = dbc.Container([
     html.Hr(),
 
     dbc.Row([
-        html.Div("Distribuição de Filmes", 
+        html.Div("Número de Filmes", 
                  className="text-secondary text-center fs-4", 
                  style={'margin-bottom': '20px'}),
 
@@ -139,10 +137,10 @@ app.layout = dbc.Container([
                 dbc.RadioItems(
                     id='movies_items',
                     options=[
-                        {'label': 'Por gênero', 'value': 'genero'},
-                        {'label': 'Por ano', 'value': 'ano'}
+                        {'label': 'Por gênero', 'value': 'genre'},
+                        {'label': 'Por ano', 'value': 'year'}
                     ],
-                    value='ano',
+                    value='genre',
                     inline=True
                 )]
         ),
@@ -175,10 +173,18 @@ def update_ranking_graph(sample_type, sample_size, genre, sorting):
     [Input('actors_search_bar', 'search_value')]
 )
 
-def search(search_value):
-    if not search_value:
+def search_results(value):
+    if not value:
         raise PreventUpdate()
-    return [actor for actor in actor_options if search_value in actor["label"]]
+    return [actor for actor in actor_options if value in actor["label"]]
+
+
+@app.callback(
+    Output('actors_network', 'figure'),
+    [Input('actors_search_bar', 'value')]
+)
+def update_output(actor):
+    return network_graph.get_actor_graph(actor)
 
 
 
@@ -189,9 +195,9 @@ def search(search_value):
 )
 
 def update_movies_graph(value):
-    if value == 'genero':
+    if value == 'genre':
         return movies_graph.get_genre_graph()
-    elif value == 'ano':
+    elif value == 'year':
         return movies_graph.get_year_graph()
     else:
         return None

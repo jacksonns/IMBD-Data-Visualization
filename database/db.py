@@ -25,8 +25,7 @@ class DBManager:
         collection = self.db['movies.data']
         # Aggregation to obtain the first 100 objects
         pipeline = [
-            {"$project": {"tconst": 1, "title": 1, "actors": 1}},  # Desired Columns
-            {"$limit": 100}  # 100 objects retrieved
+            {"$project": {"tconst": 1, "title": 1, "actors": 1}}  # Desired Columns
         ]
         result = collection.aggregate(pipeline)
         return pd.DataFrame(result)
