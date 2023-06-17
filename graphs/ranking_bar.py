@@ -2,6 +2,29 @@ import plotly.express as px
 
 MAX_SAMPLE_SIZE = 200
 
+colors = {
+    'all': 'pubu',
+    'Drama': 'redor',
+    'Comedy': 'sunsetdark',
+    'Action': 'brwnyl',
+    'Romance': 'purd',
+    'Crime': 'Reds',
+    'Thriller': 'darkmint',
+    'Horror': 'hot_R',
+    'Adventure': 'emrld',
+    'Mystery': 'ice_R',
+    'Fantasy': 'purples',
+    'Sci-Fi': 'mint',
+    'Biography': 'solar_R',
+    'History': 'gray_R',
+    'War': 'ylorrd',
+    'Animation': 'magma_R',
+    'Musical': 'rdpu',
+    'Western': 'oranges',
+    'Documentary': 'greys'
+}
+
+
 class RankingGraph:
     def __init__(self, movies_df) :
         self.movies_df = movies_df
@@ -15,7 +38,7 @@ class RankingGraph:
     def get_graph(self):
         fig = px.bar(self.df.head(self.sample_size), 
                      x='tconst', y='averageRating', 
-                     color='year', color_continuous_scale='Reds')
+                     color='year', color_continuous_scale=colors[self.genre])
 
         fig.update_traces(hovertemplate='Filme: %{text}<br>Nota: %{y}<br>Ano: %{marker.color}', text=self.df['title'])
 
