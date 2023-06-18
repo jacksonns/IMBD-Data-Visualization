@@ -6,6 +6,7 @@ from database.db import DBManager
 from graphs.network_graph import NetworkGraph
 from graphs.ranking_bar import RankingGraph
 from graphs.movies_graph import MoviesGraph
+from graphs.genres_graph import GenresGraph
 
 # Initialize the app and incorporate a Dash Bootstrap theme
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -18,6 +19,7 @@ db = DBManager()
 ranking_graph = RankingGraph(db.get_ranking_graph_data())
 network_graph = NetworkGraph(db.get_network_graph_data())
 movies_graph = MoviesGraph(db.get_years_graph_data(), db.get_genres_graph_data())
+genres_graph = GenresGraph(db.get_genres_graph_data())
 
 # Getting actor names for search bar
 actors_list = db.get_actors_list()
@@ -116,13 +118,12 @@ app.layout = dbc.Container([
                  className="text-secondary text-center fs-4"),
 
         dbc.Label("Ator ou Atriz:"),
-
         dcc.Dropdown(
             id='actors_search_bar',
             placeholder='Digite para pesquisar um nome...'
         ),
         
-        dcc.Graph(id='actors_network', figure=network_graph.get_graph(), style={'height': '100%'})
+        dcc.Graph(id='actors_network', figure=network_graph.get_graph())
     ]),
 
     html.Hr(),
@@ -147,6 +148,14 @@ app.layout = dbc.Container([
         ),
 
         dcc.Graph(id='movies_graph', figure=movies_graph.get_year_graph()),
+    ]),
+
+    dbc.Row([
+        html.Div("Genero por nNta", 
+                 className="text-secondary text-center fs-4", 
+                 style={'margin-bottom': '20px'}),
+
+        dcc.Graph(id='genres_graph', figure=genres_graph.create_box_plot()),
     ]),
 
 
