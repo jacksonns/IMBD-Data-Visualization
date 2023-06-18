@@ -152,8 +152,10 @@ app.layout = dbc.Container([
         dcc.Graph(id='movies_graph', figure=movies_graph.get_year_graph()),
     ]),
 
+    html.Hr(),
+
     dbc.Row([
-        html.Div("Genero por nota", 
+        html.Div("Gênero por nota", 
                  className="text-secondary text-center fs-4", 
                  style={'margin-bottom': '20px'}),
 
