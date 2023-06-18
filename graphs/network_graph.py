@@ -41,7 +41,14 @@ class NetworkGraph():
                 y=[y0, y1],
                 mode='lines',
                 line=dict(width=1, color='gray'),
-                hovertext='Informação sobre a aresta',
+                showlegend=False
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=[(x0 + x1) / 2],
+                y=[(y0 + y1) / 2],
+                mode='markers',
+                marker=dict(size=0.001, color='rgba(0, 0, 0, 0)'),
                 hovertemplate=f'{edge[0]} - {edge[1]}<br>Filme: {movie}<extra></extra>'
             ))
 
@@ -60,7 +67,8 @@ class NetworkGraph():
             showlegend=False,
             hovermode='closest',
             xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            height=600
         )
 
         return fig
@@ -71,23 +79,3 @@ class NetworkGraph():
         else:
             self.actor_df = self.df.head(100)
         return self.get_graph()
-
-
-
-""" from pymongo import MongoClient
-from pymongo.server_api import ServerApi
-from dotenv import load_dotenv
-import os
-
-def imdb_database():
-    load_dotenv()
-
-    client = MongoClient(os.getenv('MONGODB_URI'), server_api=ServerApi('1'))
-
-    return client["imdb"]
-
-
-if __name__=='__main__':
-   db = imdb_database()
-   fig = actors_network_graph(db)
-   fig.show() """

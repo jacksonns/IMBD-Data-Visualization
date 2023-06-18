@@ -116,12 +116,13 @@ app.layout = dbc.Container([
                  className="text-secondary text-center fs-4"),
 
         dbc.Label("Ator ou Atriz:"),
+
         dcc.Dropdown(
             id='actors_search_bar',
             placeholder='Digite para pesquisar um nome...'
         ),
         
-        dcc.Graph(id='actors_network', figure=network_graph.get_graph())
+        dcc.Graph(id='actors_network', figure=network_graph.get_graph(), style={'height': '100%'})
     ]),
 
     html.Hr(),

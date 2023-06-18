@@ -40,7 +40,7 @@ class RankingGraph:
                      x='tconst', y='averageRating', 
                      color='year', color_continuous_scale=colors[self.genre])
 
-        fig.update_traces(hovertemplate='Filme: %{text}<br>Nota: %{y}<br>Ano: %{marker.color}', text=self.df['title'])
+        fig.update_traces(customdata=self.df['title'], hovertemplate='Filme: %{customdata}<br>Nota: %{y}<br>Ano: %{marker.color}')
 
         fig.update_layout(
         xaxis_title=None,
