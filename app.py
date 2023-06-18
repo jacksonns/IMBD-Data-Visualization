@@ -16,10 +16,11 @@ server = app.server
 db = DBManager()
 
 # Initializing Graphs Classes.
-ranking_graph = RankingGraph(db.get_ranking_graph_data())
+df = db.get_ranking_graph_data()
+ranking_graph = RankingGraph(df)
 network_graph = NetworkGraph(db.get_network_graph_data())
 movies_graph = MoviesGraph(db.get_years_graph_data(), db.get_genres_graph_data())
-genres_graph = GenresGraph(db.get_genres_graph_data())
+genres_graph = GenresGraph(df)
 
 # Getting actor names for search bar
 actors_list = db.get_actors_list()
@@ -118,12 +119,13 @@ app.layout = dbc.Container([
                  className="text-secondary text-center fs-4"),
 
         dbc.Label("Ator ou Atriz:"),
+
         dcc.Dropdown(
             id='actors_search_bar',
             placeholder='Digite para pesquisar um nome...'
         ),
         
-        dcc.Graph(id='actors_network', figure=network_graph.get_graph())
+        dcc.Graph(id='actors_network', figure=network_graph.get_graph(), style={'height': '100%'})
     ]),
 
     html.Hr(),
@@ -151,7 +153,7 @@ app.layout = dbc.Container([
     ]),
 
     dbc.Row([
-        html.Div("Genero por nNta", 
+        html.Div("Genero por nota", 
                  className="text-secondary text-center fs-4", 
                  style={'margin-bottom': '20px'}),
 
